@@ -40,7 +40,7 @@ A Tinder-style restaurant discovery app built with React Native and Expo. Swipe 
 ### Install
 
 ```bash
-git clone https://github.com/maaaaaaaaaaaaaaaaaaaax/DishSwipe.git
+git clone https://github.com/maaaaaaaaaaaaaaaaaaaax/MouthQuest.git
 cd DishSwipe
 npm install
 ```
