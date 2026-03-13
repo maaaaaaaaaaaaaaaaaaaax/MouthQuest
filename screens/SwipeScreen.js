@@ -4,12 +4,13 @@ import Swiper from 'react-native-deck-swiper';
 import RestaurantCard from '../components/RestaurantCard';
 import { fetchNearbyRestaurants } from '../services/placesApi';
 
-const { height } = Dimensions.get('window');
-const CARD_HEIGHT = height * 0.68;
 
 export default function SwipeScreen({ route, navigation }) {
+  const { height } = Dimensions.get('window');
+  const CARD_HEIGHT = height * 0.68;
   const { query, nextPageToken: initialPageToken } = route.params;
   const [restaurants, setRestaurants] = useState(route.params.restaurants);
+  const [deckKey, setDeckKey] = useState(0);
   const [cardIndex, setCardIndex] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [finished, setFinished] = useState(false);
@@ -18,7 +19,7 @@ export default function SwipeScreen({ route, navigation }) {
 
   const openInMaps = useCallback((restaurant) => {
     const q = encodeURIComponent(restaurant.name + ' ' + restaurant.address);
-    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${restaurant.placeId}`);
+    Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${restaurant.placeId}`).catch(() => {});
   }, []);
 
   const handleSwipedRight = useCallback((index) => { openInMaps(restaurants[index]); }, [restaurants, openInMaps]);
@@ -31,6 +32,7 @@ export default function SwipeScreen({ route, navigation }) {
       nextPageTokenRef.current = nextPageToken;
       setRestaurants(more);
       setCardIndex(0);
+      setDeckKey((k) => k + 1);
     } catch {
       setFinished(true);
     } finally {
@@ -61,6 +63,7 @@ export default function SwipeScreen({ route, navigation }) {
       </View>
 
       <Swiper
+        key={deckKey}
         ref={swiperRef}
         cards={restaurants}
         cardIndex={cardIndex}

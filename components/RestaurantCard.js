@@ -11,7 +11,7 @@ export default function RestaurantCard({ restaurant }) {
     >
       <View style={styles.info}>
         <View style={styles.topRow}>
-          <Text style={styles.cuisine}>{restaurant.cuisine.toUpperCase()}</Text>
+          <Text style={styles.cuisine}>{restaurant.cuisine?.toUpperCase()}</Text>
           <Text style={styles.price}>{restaurant.priceLevel}</Text>
         </View>
         <Text style={styles.name}>{restaurant.name}</Text>

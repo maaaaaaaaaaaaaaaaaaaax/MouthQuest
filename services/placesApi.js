@@ -24,13 +24,15 @@ export async function fetchNearbyRestaurants(cityOrZip, pageToken = null) {
   const placesRes = await fetch(url);
   const placesData = await placesRes.json();
 
+  if (!placesData.results) throw new Error(placesData.status || 'No results from Places API');
+
   const restaurants = placesData.results.map((place) => ({
     id: place.place_id,
     name: place.name,
     cuisine: place.types?.find((t) => !['restaurant','food','point_of_interest','establishment'].includes(t)) || 'Restaurant',
     rating: place.rating,
     reviewCount: place.user_ratings_total,
-    priceLevel: '$'.repeat(place.price_level || 2),
+    priceLevel: '$'.repeat(place.price_level ?? 2),
     distance: '',
     address: place.vicinity,
     photo: place.photos?.[0]
