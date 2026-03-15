@@ -2,6 +2,7 @@ import { mockRestaurants } from '../data/mockRestaurants';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
 const USE_MOCK = false; // Flip to true to use mock data
+const DEBUG = true; // Set to false before App Store submission
 
 function haversineDistance(lat1, lng1, lat2, lng2) {
   const R = 3958.8; // Earth radius in miles
@@ -66,6 +67,11 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
       placeId: place.place_id,
     };
   });
+
+  const total = restaurants.length;
+  const withPhoto = restaurants.filter((r) => r.photo && !r.photo.includes('unsplash')).length;
+  const fallback = total - withPhoto;
+  if (DEBUG) console.log(`[Photo Coverage] ${withPhoto}/${total} have photos (${Math.round((withPhoto / total) * 100)}%), ${fallback} will use fallback`);
 
   return { restaurants, nextPageToken: placesData.next_page_token || null };
 }

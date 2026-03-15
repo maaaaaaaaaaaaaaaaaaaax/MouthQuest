@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Dimensions, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Dimensions, Animated, Image } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import RestaurantCard from '../components/RestaurantCard';
 import { fetchNearbyRestaurants } from '../services/placesApi';
@@ -9,7 +9,11 @@ export default function SwipeScreen({ route, navigation }) {
   const { height } = Dimensions.get('window');
   const CARD_HEIGHT = height * 0.68;
   const { query, nextPageToken: initialPageToken } = route.params;
-  const [restaurants, setRestaurants] = useState(route.params.restaurants);
+  const [restaurants, setRestaurants] = useState(() => {
+    const initial = route.params.restaurants;
+    [0, 1, 2].forEach((i) => { if (initial[i]?.photo) Image.prefetch(initial[i].photo); });
+    return initial;
+  });
   const [deckKey, setDeckKey] = useState(0);
   const [cardIndex, setCardIndex] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -35,7 +39,9 @@ export default function SwipeScreen({ route, navigation }) {
   const handleSwiped = useCallback((index) => {
     glowAnim.setValue(0);
     setCardIndex(index + 1);
-  }, [glowAnim]);
+    const next = restaurants[index + 3];
+    if (next?.photo) Image.prefetch(next.photo);
+  }, [glowAnim, restaurants]);
 
   const handleAllSwiped = useCallback(async () => {
     setLoadingMore(true);
@@ -70,7 +76,7 @@ export default function SwipeScreen({ route, navigation }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.back}>←</Text></TouchableOpacity>
-        <Text style={styles.headerTitle}>🍽️ DishSwipe</Text>
+        <Text style={styles.headerTitle}>🍽️ MouthQuest</Text>
         <View style={{ width: 40 }} />
       </View>
 

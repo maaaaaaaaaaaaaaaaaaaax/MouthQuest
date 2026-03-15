@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "DishSwipe",
-    "slug": "DishSwipe",
+    "name": "MouthQuest",
+    "slug": "MouthQuest",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "DishSwipe uses your location to find restaurants nearby."
+        "NSLocationWhenInUseUsageDescription": "MouthQuest uses your location to find restaurants nearby."
       }
     },
     "android": {

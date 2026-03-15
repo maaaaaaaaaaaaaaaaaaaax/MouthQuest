@@ -49,7 +49,7 @@ export default function SearchScreen({ navigation }) {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
         <Text style={styles.emoji}>🍽️</Text>
-        <Text style={styles.title}>DishSwipe</Text>
+        <Text style={styles.title}>MouthQuest</Text>
         <Text style={styles.subtitle}>Swipe right to get directions.{'\n'}Swipe left to keep exploring.</Text>
         <TextInput style={styles.input} placeholder="City or zip code" placeholderTextColor="#999" value={query} onChangeText={setQuery} onSubmitEditing={handleSearch} returnKeyType="search" autoCapitalize="words" />
         {error ? <Text style={styles.error}>{error}</Text> : null}

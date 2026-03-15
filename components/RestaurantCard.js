@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ImageBackground, StyleSheet, Animated } from 'react-native';
 
+const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600';
+
 export default function RestaurantCard({ restaurant, glowAnim }) {
+  const [photoUri, setPhotoUri] = useState(restaurant.photo || FALLBACK_IMAGE);
   const borderColor = glowAnim
     ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['transparent', '#4CDA64'] })
     : 'transparent';
@@ -27,10 +30,11 @@ export default function RestaurantCard({ restaurant, glowAnim }) {
       },
     ]}>
       <ImageBackground
-        source={{ uri: restaurant.photo }}
+        source={{ uri: photoUri }}
         style={styles.card}
         imageStyle={styles.image}
         resizeMode="cover"
+        onError={() => setPhotoUri(FALLBACK_IMAGE)}
       >
         <View style={styles.info}>
           <View style={styles.topRow}>
