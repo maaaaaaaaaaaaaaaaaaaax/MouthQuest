@@ -12,9 +12,13 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "DishSwipe uses your location to find restaurants nearby."
+      }
     },
     "android": {
+      "permissions": ["ACCESS_FINE_LOCATION"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -25,8 +29,6 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "experiments": {
-      "newArchEnabled": false
-    }
+    "newArchEnabled": false
   }
 }

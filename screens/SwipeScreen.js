@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Linking, ActivityIndicator, Dimensions, Animated } from 'react-native';
 import Swiper from 'react-native-deck-swiper';
 import RestaurantCard from '../components/RestaurantCard';
 import { fetchNearbyRestaurants } from '../services/placesApi';
@@ -16,14 +16,26 @@ export default function SwipeScreen({ route, navigation }) {
   const [finished, setFinished] = useState(false);
   const nextPageTokenRef = useRef(initialPageToken);
   const swiperRef = useRef(null);
+  const glowAnim = useRef(new Animated.Value(0)).current;
 
   const openInMaps = useCallback((restaurant) => {
     const q = encodeURIComponent(restaurant.name + ' ' + restaurant.address);
     Linking.openURL(`https://www.google.com/maps/search/?api=1&query=${q}&query_place_id=${restaurant.placeId}`).catch(() => {});
   }, []);
 
-  const handleSwipedRight = useCallback((index) => { openInMaps(restaurants[index]); }, [restaurants, openInMaps]);
-  const handleSwiped = useCallback((index) => { setCardIndex(index + 1); }, []);
+  const handleSwiping = useCallback((x) => {
+    glowAnim.setValue(Math.max(0, Math.min(1, x / 100)));
+  }, [glowAnim]);
+
+  const handleSwipedRight = useCallback((index) => {
+    glowAnim.setValue(0);
+    openInMaps(restaurants[index]);
+  }, [restaurants, openInMaps, glowAnim]);
+
+  const handleSwiped = useCallback((index) => {
+    glowAnim.setValue(0);
+    setCardIndex(index + 1);
+  }, [glowAnim]);
 
   const handleAllSwiped = useCallback(async () => {
     setLoadingMore(true);
@@ -67,7 +79,8 @@ export default function SwipeScreen({ route, navigation }) {
         ref={swiperRef}
         cards={restaurants}
         cardIndex={cardIndex}
-        renderCard={(r) => r ? <RestaurantCard restaurant={r} /> : null}
+        renderCard={(r) => r ? <RestaurantCard restaurant={r} glowAnim={glowAnim} /> : null}
+        onSwiping={handleSwiping}
         onSwipedRight={handleSwipedRight}
         onSwiped={handleSwiped}
         onSwipedAll={handleAllSwiped}

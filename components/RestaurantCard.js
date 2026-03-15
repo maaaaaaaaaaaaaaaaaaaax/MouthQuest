@@ -1,34 +1,59 @@
 import React from 'react';
-import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import { View, Text, ImageBackground, StyleSheet, Animated } from 'react-native';
 
-export default function RestaurantCard({ restaurant }) {
+export default function RestaurantCard({ restaurant, glowAnim }) {
+  const borderColor = glowAnim
+    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['transparent', '#4CDA64'] })
+    : 'transparent';
+
+  const shadowOpacity = glowAnim
+    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.9] })
+    : 0;
+
+  const elevation = glowAnim
+    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 18] })
+    : 0;
+
   return (
-    <ImageBackground
-      source={{ uri: restaurant.photo }}
-      style={styles.card}
-      imageStyle={styles.image}
-      resizeMode="cover"
-    >
-      <View style={styles.info}>
-        <View style={styles.topRow}>
-          <Text style={styles.cuisine}>{restaurant.cuisine?.toUpperCase()}</Text>
-          <Text style={styles.price}>{restaurant.priceLevel}</Text>
+    <Animated.View style={[
+      styles.glowWrapper,
+      {
+        borderColor,
+        shadowOpacity,
+        elevation,
+        shadowColor: '#4CDA64',
+        shadowRadius: 18,
+        shadowOffset: { width: 0, height: 0 },
+      },
+    ]}>
+      <ImageBackground
+        source={{ uri: restaurant.photo }}
+        style={styles.card}
+        imageStyle={styles.image}
+        resizeMode="cover"
+      >
+        <View style={styles.info}>
+          <View style={styles.topRow}>
+            <Text style={styles.cuisine}>{restaurant.cuisine?.toUpperCase()}</Text>
+            <Text style={styles.price}>{restaurant.priceLevel}</Text>
+          </View>
+          <Text style={styles.name}>{restaurant.name}</Text>
+          <View style={styles.bottomRow}>
+            <Text style={styles.ratingText}>⭐ {restaurant.rating}</Text>
+            <Text style={styles.reviewText}>({restaurant.reviewCount?.toLocaleString()})</Text>
+            {restaurant.distance ? <Text style={styles.distance}>📍 {restaurant.distance}</Text> : null}
+          </View>
+          <Text style={styles.address}>{restaurant.address}</Text>
         </View>
-        <Text style={styles.name}>{restaurant.name}</Text>
-        <View style={styles.bottomRow}>
-          <Text style={styles.ratingText}>⭐ {restaurant.rating}</Text>
-          <Text style={styles.reviewText}>({restaurant.reviewCount?.toLocaleString()})</Text>
-          {restaurant.distance ? <Text style={styles.distance}>📍 {restaurant.distance}</Text> : null}
-        </View>
-        <Text style={styles.address}>{restaurant.address}</Text>
-      </View>
-    </ImageBackground>
+      </ImageBackground>
+    </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { width: '100%', height: '100%', borderRadius: 20, overflow: 'hidden', justifyContent: 'flex-end' },
-  image: { borderRadius: 20 },
+  glowWrapper: { width: '100%', height: '100%', borderRadius: 20, borderWidth: 3 },
+  card: { width: '100%', height: '100%', borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
+  image: { borderRadius: 18 },
   info: { padding: 24, paddingBottom: 28, backgroundColor: 'rgba(0,0,0,0.45)' },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   cuisine: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '700', letterSpacing: 1.5 },
