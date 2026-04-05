@@ -1,6 +1,6 @@
-# DishSwipe
+# MouthQuest
 
-A Tinder-style restaurant discovery app built with React Native and Expo. Swipe right to open Google Maps directions, swipe left to skip.
+A Tinder-style restaurant discovery app built with React Native and Expo. Tell us what you're looking for via filters, then swipe right to open Google Maps directions, swipe left to skip.
 
 ---
 
