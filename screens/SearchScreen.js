@@ -1,26 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
 import * as Location from 'expo-location';
-import { fetchNearbyRestaurants } from '../services/placesApi';
 
 export default function SearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
-  const [loading, setLoading] = useState(false);
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleSearch() {
+  function handleSearch() {
     if (!query.trim()) { setError('Enter a city or zip code to get started'); return; }
     setError('');
-    setLoading(true);
-    try {
-      const { restaurants, nextPageToken } = await fetchNearbyRestaurants(query.trim());
-      navigation.navigate('Swipe', { restaurants, query: query.trim(), nextPageToken });
-    } catch {
-      setError('Could not find restaurants. Try a different location.');
-    } finally {
-      setLoading(false);
-    }
+    navigation.navigate('Filter', { query: query.trim(), coords: null });
   }
 
   async function handleUseLocation() {
@@ -34,8 +24,7 @@ export default function SearchScreen({ navigation }) {
       }
       const pos = await Location.getCurrentPositionAsync({});
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      const { restaurants, nextPageToken } = await fetchNearbyRestaurants(coords);
-      navigation.navigate('Swipe', { restaurants, query: 'Current Location', nextPageToken });
+      navigation.navigate('Filter', { query: null, coords });
     } catch {
       setError('Could not get your location. Try entering a city or zip code.');
     } finally {
@@ -43,7 +32,7 @@ export default function SearchScreen({ navigation }) {
     }
   }
 
-  const busy = loading || locationLoading;
+  const busy = locationLoading;
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -54,7 +43,7 @@ export default function SearchScreen({ navigation }) {
         <TextInput style={styles.input} placeholder="City or zip code" placeholderTextColor="#999" value={query} onChangeText={setQuery} onSubmitEditing={handleSearch} returnKeyType="search" autoCapitalize="words" />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <TouchableOpacity style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSearch} disabled={busy} activeOpacity={0.85}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Find Restaurants</Text>}
+          <Text style={styles.buttonText}>Find Restaurants</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.locationButton, busy && styles.buttonDisabled]} onPress={handleUseLocation} disabled={busy} activeOpacity={0.85}>
           {locationLoading ? <ActivityIndicator color="#FF4458" /> : <Text style={styles.locationButtonText}>📍 Use my location</Text>}

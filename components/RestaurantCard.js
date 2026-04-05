@@ -1,34 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, ImageBackground, StyleSheet, Animated } from 'react-native';
+import { View, Text, ImageBackground, StyleSheet } from 'react-native';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600';
 
-export default function RestaurantCard({ restaurant, glowAnim }) {
+const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
   const [photoUri, setPhotoUri] = useState(restaurant.photo || FALLBACK_IMAGE);
-  const borderColor = glowAnim
-    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: ['transparent', '#4CDA64'] })
-    : 'transparent';
-
-  const shadowOpacity = glowAnim
-    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 0.9] })
-    : 0;
-
-  const elevation = glowAnim
-    ? glowAnim.interpolate({ inputRange: [0, 1], outputRange: [0, 18] })
-    : 0;
 
   return (
-    <Animated.View style={[
-      styles.glowWrapper,
-      {
-        borderColor,
-        shadowOpacity,
-        elevation,
-        shadowColor: '#4CDA64',
-        shadowRadius: 18,
-        shadowOffset: { width: 0, height: 0 },
-      },
-    ]}>
+    <View style={styles.glowWrapper}>
       <ImageBackground
         source={{ uri: photoUri }}
         style={styles.card}
@@ -50,12 +29,14 @@ export default function RestaurantCard({ restaurant, glowAnim }) {
           <Text style={styles.address}>{restaurant.address}</Text>
         </View>
       </ImageBackground>
-    </Animated.View>
+    </View>
   );
-}
+});
+
+export default RestaurantCard;
 
 const styles = StyleSheet.create({
-  glowWrapper: { width: '100%', height: '100%', borderRadius: 20, borderWidth: 3 },
+  glowWrapper: { width: '100%', height: '100%', borderRadius: 20, backgroundColor: '#1a1a1a' },
   card: { width: '100%', height: '100%', borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
   image: { borderRadius: 18 },
   info: { padding: 24, paddingBottom: 28, backgroundColor: 'rgba(0,0,0,0.45)' },

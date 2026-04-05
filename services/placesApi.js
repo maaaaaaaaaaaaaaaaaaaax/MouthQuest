@@ -1,3 +1,20 @@
+// MouthQuest — Places API Service
+//
+// Roadmap context:
+// Phase 1: Real Google Places API + match animation (complete)
+// Phase 2: Filters (cuisine, price, distance, rating), GPS location (complete)
+// Phase 3: App Store polish — icons, error handling, accessibility.
+//   - Food photo filtering: some cards show exterior/street photos instead of food.
+//     Option A (validate first): request up to 10 photos per place and select the
+//     highest-ranked candidate. Option B (if A is insufficient): use Google Cloud
+//     Vision API to classify photos as food vs non-food before displaying.
+// Phase 4: EAS build + App Store submission
+//
+// Service layer notes for future phases:
+// - fetchNearbyRestaurants accepts lat/lng directly (no geocoding) to support GPS
+// - filters param is extensible: add open-now, cuisine expand, etc. in Phase 2+
+// - restaurant objects are plain serializable data (AsyncStorage-ready for favorites)
+
 import { mockRestaurants } from '../data/mockRestaurants';
 
 const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY;
@@ -16,7 +33,12 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
-export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null) {
+// filters shape: { cuisines: string[], priceLevels: string[], radiusMiles: number, minRating: number }
+// priceLevels uses $ symbols ('$','$$','$$$','$$$$') mapped to Places API 1-4 scale
+// minRating is a number (0 = any, 3 = 3+, 4 = 4+, 4.5 = 4.5+)
+const PRICE_LEVEL_MAP = { '$': 1, '$$': 2, '$$$': 3, '$$$$': 4 };
+
+export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null, filters = null) {
   if (USE_MOCK) {
     await new Promise((res) => setTimeout(res, 800));
     return { restaurants: mockRestaurants, nextPageToken: null };
@@ -27,7 +49,7 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
     // Already have lat/lng — skip geocoding
     location = { lat: cityOrZipOrCoords.lat, lng: cityOrZipOrCoords.lng };
   } else {
-    // Step 1: Geocode the city/zip to lat/lng
+    // Geocode the city/zip to lat/lng
     const geoRes = await fetch(
       `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(cityOrZipOrCoords)}&key=${GOOGLE_PLACES_API_KEY}`
     );
@@ -36,9 +58,27 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
     if (!location) throw new Error('Location not found');
   }
 
-  // Step 2: Nearby restaurant search, sorted by distance
-  let url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&rankby=distance&type=restaurant&key=${GOOGLE_PLACES_API_KEY}`;
-  if (pageToken) url += `&pagetoken=${pageToken}`;
+  // Build Places Nearby Search URL
+  let url;
+  if (pageToken) {
+    // pageToken encodes the original search — other params are ignored by the API
+    url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${pageToken}&key=${GOOGLE_PLACES_API_KEY}`;
+  } else if (filters) {
+    const { cuisines = [], priceLevels = [], radiusMiles = 2, openNow = false } = filters;
+    const radiusMeters = Math.round(radiusMiles * 1609.34);
+    // radius requires rankby=prominence (default); rankby=distance cannot be used with radius
+    url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=${radiusMeters}&type=restaurant&key=${GOOGLE_PLACES_API_KEY}`;
+    // Join all selected cuisines as a single keyword string
+    if (cuisines.length > 0) url += `&keyword=${encodeURIComponent(cuisines.join(' '))}`;
+    if (priceLevels.length > 0) {
+      const levels = priceLevels.map((p) => PRICE_LEVEL_MAP[p]);
+      url += `&minprice=${Math.min(...levels)}&maxprice=${Math.max(...levels)}`;
+    }
+    if (openNow) url += `&opennow=true`;
+  } else {
+    // No filters — rank by distance (closest first)
+    url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&rankby=distance&type=restaurant&key=${GOOGLE_PLACES_API_KEY}`;
+  }
 
   const placesRes = await fetch(url);
   const placesData = await placesRes.json();
@@ -60,6 +100,7 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
       reviewCount: place.user_ratings_total,
       priceLevel: '$'.repeat(place.price_level ?? 2),
       distance: `${dist.toFixed(1)} mi`,
+      distanceMiles: dist,
       address: place.vicinity,
       photo: place.photos?.[0]
         ? `https://maps.googleapis.com/maps/api/place/photo?maxwidth=600&photoreference=${place.photos[0].photo_reference}&key=${GOOGLE_PLACES_API_KEY}`
@@ -68,10 +109,19 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
     };
   });
 
-  const total = restaurants.length;
-  const withPhoto = restaurants.filter((r) => r.photo && !r.photo.includes('unsplash')).length;
-  const fallback = total - withPhoto;
-  if (DEBUG) console.log(`[Photo Coverage] ${withPhoto}/${total} have photos (${Math.round((withPhoto / total) * 100)}%), ${fallback} will use fallback`);
+  // Client-side filters: rating (Places API has no native rating filter)
+  // and distance (enforces exact radius, since API radius is approximate)
+  let filtered = restaurants;
+  if (filters) {
+    const { minRating = 0, radiusMiles = 2 } = filters;
+    if (minRating > 0) filtered = filtered.filter((r) => (r.rating || 0) >= minRating);
+    filtered = filtered.filter((r) => r.distanceMiles <= radiusMiles);
+  }
 
-  return { restaurants, nextPageToken: placesData.next_page_token || null };
+  const total = filtered.length;
+  const withPhoto = filtered.filter((r) => r.photo && !r.photo.includes('unsplash')).length;
+  const fallback = total - withPhoto;
+  if (DEBUG) console.log(`[Photo Coverage] ${withPhoto}/${total} have photos (${total > 0 ? Math.round((withPhoto / total) * 100) : 0}%), ${fallback} will use fallback`);
+
+  return { restaurants: filtered, nextPageToken: placesData.next_page_token || null };
 }
