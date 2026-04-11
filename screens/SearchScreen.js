@@ -79,7 +79,7 @@ export default function SearchScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
-        <MouthQuestLogo size={80} />
+        <MouthQuestLogo size={120} />
         <Text style={styles.title}>MouthQuest</Text>
         <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
           {TAGLINES[taglineIndex]}
