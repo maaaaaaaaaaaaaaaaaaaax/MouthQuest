@@ -1,32 +1,74 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Animated, Linking } from 'react-native';
 import * as Location from 'expo-location';
+import MouthQuestLogo from '../components/MouthQuestLogo';
+
+const TAGLINES = [
+  "It's like a quest, but for your mouth",
+  "Swipe right to eat. Swipe left to find something to fill the void.",
+  "Your next meal is one swipe away",
+  "No more 'I don't know, what do you want?'",
+  "Don't call her, instead find a new restaurant.",
+];
 
 export default function SearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [locationLoading, setLocationLoading] = useState(false);
   const [error, setError] = useState('');
+  const [errorAction, setErrorAction] = useState(null); // { label, onPress } | null
+  const [taglineIndex, setTaglineIndex] = useState(0);
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const zipInputRef = useRef(null);
+
+  function clearError() {
+    setError('');
+    setErrorAction(null);
+  }
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      Animated.sequence([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 0, duration: 0, useNativeDriver: true }),
+      ]).start(() => {
+        setTaglineIndex((i) => (i + 1) % TAGLINES.length);
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+      });
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
   function handleSearch() {
-    if (!query.trim()) { setError('Enter a city or zip code to get started'); return; }
-    setError('');
-    navigation.navigate('Filter', { query: query.trim(), coords: null });
+    const zip = query.trim();
+    if (!/^\d{5}$/.test(zip)) { setError('Please enter a valid 5-digit zip code'); return; }
+    clearError();
+    navigation.navigate('Filter', { query: zip, coords: null });
   }
 
   async function handleUseLocation() {
-    setError('');
+    clearError();
     setLocationLoading(true);
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
+      const { status, canAskAgain } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setError('Location permission denied. Enter a city or zip code instead.');
+        if (!canAskAgain) {
+          setError('Location access is disabled. Enable it in your phone Settings to use this feature.');
+          setErrorAction({ label: 'Open Settings', onPress: () => Linking.openSettings() });
+        } else {
+          setError('Location access was denied. Please enter your zip code instead.');
+          zipInputRef.current?.focus();
+        }
         return;
       }
-      const pos = await Location.getCurrentPositionAsync({});
+      const pos = await Location.getCurrentPositionAsync({
+        timeout: 10000,
+        accuracy: Location.Accuracy.Balanced,
+      });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       navigation.navigate('Filter', { query: null, coords });
     } catch {
-      setError('Could not get your location. Try entering a city or zip code.');
+      setError("Couldn't get your location. Please enter your zip code instead.");
+      zipInputRef.current?.focus();
     } finally {
       setLocationLoading(false);
     }
@@ -37,17 +79,40 @@ export default function SearchScreen({ navigation }) {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.content}>
-        <Text style={styles.emoji}>🍽️</Text>
+        <MouthQuestLogo size={80} />
         <Text style={styles.title}>MouthQuest</Text>
-        <Text style={styles.subtitle}>Swipe right to get directions.{'\n'}Swipe left to keep exploring.</Text>
-        <TextInput style={styles.input} placeholder="City or zip code" placeholderTextColor="#999" value={query} onChangeText={setQuery} onSubmitEditing={handleSearch} returnKeyType="search" autoCapitalize="words" />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TouchableOpacity style={[styles.button, busy && styles.buttonDisabled]} onPress={handleSearch} disabled={busy} activeOpacity={0.85}>
-          <Text style={styles.buttonText}>Find Restaurants</Text>
-        </TouchableOpacity>
+        <Animated.Text style={[styles.subtitle, { opacity: fadeAnim }]}>
+          {TAGLINES[taglineIndex]}
+        </Animated.Text>
+
         <TouchableOpacity style={[styles.locationButton, busy && styles.buttonDisabled]} onPress={handleUseLocation} disabled={busy} activeOpacity={0.85}>
-          {locationLoading ? <ActivityIndicator color="#FF4458" /> : <Text style={styles.locationButtonText}>📍 Use my location</Text>}
+          <Text style={styles.locationButtonText}>{locationLoading ? 'Getting location...' : '📍 Use my location'}</Text>
         </TouchableOpacity>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <TextInput
+          ref={zipInputRef}
+          style={styles.input}
+          placeholder="Enter zip code (e.g. 10001)"
+          placeholderTextColor="#999"
+          value={query}
+          onChangeText={setQuery}
+          onSubmitEditing={handleSearch}
+          returnKeyType="search"
+          keyboardType="numeric"
+          maxLength={5}
+        />
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {errorAction ? (
+          <TouchableOpacity onPress={errorAction.onPress} activeOpacity={0.75}>
+            <Text style={styles.errorActionLink}>{errorAction.label}</Text>
+          </TouchableOpacity>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );
@@ -56,14 +121,15 @@ export default function SearchScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0f0f0f' },
   content: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 },
-  emoji: { fontSize: 64, marginBottom: 16 },
-  title: { fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: 12 },
+  title: { fontSize: 40, fontWeight: '900', color: '#fff', letterSpacing: -1, marginBottom: 12, marginTop: 16 },
   subtitle: { fontSize: 16, color: 'rgba(255,255,255,0.5)', textAlign: 'center', lineHeight: 24, marginBottom: 48 },
-  input: { width: '100%', backgroundColor: '#1e1e1e', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 16, fontSize: 16, color: '#fff', borderWidth: 1, borderColor: '#2e2e2e', marginBottom: 12 },
-  error: { color: '#ff6b6b', fontSize: 13, marginBottom: 12, textAlign: 'center' },
-  button: { width: '100%', backgroundColor: '#FF4458', borderRadius: 14, paddingVertical: 18, alignItems: 'center', marginTop: 4 },
+  locationButton: { width: '100%', backgroundColor: '#FF4458', borderRadius: 14, paddingVertical: 18, alignItems: 'center' },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
-  locationButton: { width: '100%', borderRadius: 14, paddingVertical: 16, alignItems: 'center', marginTop: 12, borderWidth: 1, borderColor: '#2e2e2e' },
-  locationButtonText: { color: '#FF4458', fontSize: 16, fontWeight: '600' },
+  locationButtonText: { color: '#fff', fontSize: 17, fontWeight: '700' },
+  dividerRow: { flexDirection: 'row', alignItems: 'center', width: '100%', marginVertical: 20 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.1)' },
+  dividerText: { color: 'rgba(255,255,255,0.3)', fontSize: 12, marginHorizontal: 12 },
+  input: { width: '100%', backgroundColor: '#1e1e1e', borderRadius: 14, paddingHorizontal: 20, paddingVertical: 16, fontSize: 16, color: '#fff', borderWidth: 1, borderColor: '#2e2e2e' },
+  error: { color: '#FF4458', fontSize: 13, marginTop: 12, textAlign: 'center' },
+  errorActionLink: { color: '#FF8C42', fontSize: 13, marginTop: 8, textAlign: 'center', textDecorationLine: 'underline', fontWeight: '600' },
 });

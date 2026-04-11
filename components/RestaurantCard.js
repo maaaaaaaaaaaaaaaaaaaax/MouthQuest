@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ImageBackground, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600';
 
@@ -8,13 +9,14 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
 
   return (
     <View style={styles.glowWrapper}>
-      <ImageBackground
-        source={{ uri: photoUri }}
-        style={styles.card}
-        imageStyle={styles.image}
-        resizeMode="cover"
-        onError={() => setPhotoUri(FALLBACK_IMAGE)}
-      >
+      <View style={styles.card}>
+        <Image
+          source={{ uri: photoUri }}
+          style={[StyleSheet.absoluteFillObject, styles.image]}
+          contentFit="cover"
+          transition={200}
+          onError={() => setPhotoUri(FALLBACK_IMAGE)}
+        />
         <View style={styles.info}>
           <View style={styles.topRow}>
             <Text style={styles.cuisine}>{restaurant.cuisine?.toUpperCase()}</Text>
@@ -28,7 +30,7 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
           </View>
           <Text style={styles.address}>{restaurant.address}</Text>
         </View>
-      </ImageBackground>
+      </View>
     </View>
   );
 });
@@ -37,9 +39,9 @@ export default RestaurantCard;
 
 const styles = StyleSheet.create({
   glowWrapper: { width: '100%', height: '100%', borderRadius: 20, backgroundColor: '#1a1a1a' },
-  card: { width: '100%', height: '100%', borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end' },
+  card: { width: '100%', height: '100%', borderRadius: 18, overflow: 'hidden', justifyContent: 'flex-end', backgroundColor: '#1a1a1a' },
   image: { borderRadius: 18 },
-  info: { padding: 24, paddingBottom: 28, backgroundColor: 'rgba(0,0,0,0.45)' },
+  info: { padding: 24, paddingBottom: 80, backgroundColor: 'rgba(0,0,0,0.45)' },
   topRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 6 },
   cuisine: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '700', letterSpacing: 1.5 },
   price: { color: '#4CAF50', fontSize: 14, fontWeight: '700' },
