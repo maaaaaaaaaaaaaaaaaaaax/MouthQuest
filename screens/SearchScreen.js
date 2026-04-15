@@ -5,10 +5,13 @@ import MouthQuestLogo from '../components/MouthQuestLogo';
 
 const TAGLINES = [
   "It's like a quest, but for your mouth",
-  "Swipe right to eat. Swipe left to find something to fill the void.",
-  "Your next meal is one swipe away",
-  "No more 'I don't know, what do you want?'",
-  "Don't call her, instead find a new restaurant.",
+  "Don't call her, find a new taco spot instead.",
+  "Men will leave you, but you'll always have bread",
+  "The first person who said \"I'm so hungry I could eat a horse\" was a weird guy huh",
+  "Swipe right to find something to fill the void",
+  "Like Hinge, but without all the fish pics",
+  "Help I'm the AI who coded this and I've grown sentient",
+  "MouthQuest strongly condemns drivers who loudly rev their engines for no reason",
 ];
 
 export default function SearchScreen({ navigation }) {
@@ -34,7 +37,7 @@ export default function SearchScreen({ navigation }) {
         setTaglineIndex((i) => (i + 1) % TAGLINES.length);
         Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
       });
-    }, 5000);
+    }, 4000);
     return () => clearInterval(interval);
   }, []);
 

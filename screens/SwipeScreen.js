@@ -14,17 +14,22 @@ export default function SwipeScreen({ route, navigation }) {
   const { query, coords = null, nextPageToken: initialPageToken, filters = null } = route.params;
   const [restaurants, setRestaurants] = useState(() => {
     const initial = route.params.restaurants;
-    [0, 1, 2].forEach((i) => { if (initial[i]?.photo) Image.prefetch(initial[i].photo); });
+    [0, 1, 2].forEach((i) => {
+      if (initial[i]?.photo) {
+        console.log('[Prefetch] Initial — index', i);
+        Image.prefetch(initial[i].photo);
+      }
+    });
     return initial;
   });
   const [swiperHeight, setSwiperHeight] = useState(0);
   const [deckKey, setDeckKey] = useState(0);
-  const [cardIndex, setCardIndex] = useState(0);
   const [loadingMore, setLoadingMore] = useState(false);
   const [finished, setFinished] = useState(false);
   const [empty, setEmpty] = useState(() => route.params.restaurants.length === 0);
   const [loadError, setLoadError] = useState(null);
   const [resetBanner, setResetBanner] = useState(false);
+  const cardIndexRef = useRef(0);
   const nextPageTokenRef = useRef(initialPageToken);
   const retryCountRef = useRef(0);
 
@@ -40,7 +45,7 @@ export default function SwipeScreen({ route, navigation }) {
     }
     setEmpty(false);
     setRestaurants(next);
-    setCardIndex(0);
+    cardIndexRef.current = 0;
     setDeckKey((k) => k + 1);
     setFinished(false);
     setLoadingMore(false);
@@ -61,12 +66,18 @@ export default function SwipeScreen({ route, navigation }) {
   }, [restaurants, coords, query]);
 
   const handleSwiped = useCallback((index) => {
-    setCardIndex(index + 1);
-    const next = restaurants[index + 3];
-    if (next?.photo) Image.prefetch(next.photo);
+    cardIndexRef.current = index + 1;
+    const next = restaurants[index + 2];
+    if (next?.photo) {
+      console.log('[Prefetch] Swiped index', index, '— prefetching index', index + 2);
+      Image.prefetch(next.photo);
+    } else {
+      console.log('[Prefetch] Swiped index', index, '— no card at index', index + 2, 'to prefetch');
+    }
   }, [restaurants]);
 
   const handleAllSwiped = useCallback(async () => {
+    if (cardIndexRef.current < restaurants.length - 1) return;
     setLoadError(null);
     setLoadingMore(true);
     try {
@@ -78,8 +89,9 @@ export default function SwipeScreen({ route, navigation }) {
         return;
       }
       if (wasReset) setResetBanner(true);
+      [0, 1, 2].forEach((i) => { if (more[i]?.photo) Image.prefetch(more[i].photo); });
       setRestaurants(more);
-      setCardIndex(0);
+      cardIndexRef.current = 0;
       setDeckKey((k) => k + 1);
     } catch (e) {
       retryCountRef.current += 1;
@@ -158,17 +170,15 @@ export default function SwipeScreen({ route, navigation }) {
           key={deckKey}
           ref={swiperRef}
           cards={restaurants}
-          cardIndex={cardIndex}
-          renderCard={(r) => r ? <RestaurantCard restaurant={r} /> : null}
+          renderCard={(r, i) => { console.log('[RenderCard] index', i, r ? r.name : 'null'); return r ? <RestaurantCard restaurant={r} /> : null; }}
           onSwipedRight={handleSwipedRight}
           onSwipedLeft={handleSwipedLeft}
           onSwiped={handleSwiped}
           onSwipedAll={handleAllSwiped}
           backgroundColor="transparent"
-          stackSize={3}
-          stackSeparation={14}
+          stackSize={2}
+          stackSeparation={10}
           stackScale={4}
-          animateCardOpacity
           disableTopSwipe
           disableBottomSwipe
           cardHorizontalMargin={20}
