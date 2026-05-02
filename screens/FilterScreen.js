@@ -170,14 +170,6 @@ export default function FilterScreen({ route, navigation }) {
           </LinearGradient>
         </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.jesusTakeTheWheel, loading && styles.findButtonDisabled]}
-          onPress={() => runSearch({ priceLevels: [], radiusMiles: 2, minRating: 0, openNow: false })}
-          disabled={loading}
-          activeOpacity={0.75}
-        >
-          <Text style={styles.jesusTakeTheWheelText}>🙏 Skip filters, let Jesus take the wheel</Text>
-        </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -208,6 +200,4 @@ const styles = StyleSheet.create({
   findButtonDisabled: { opacity: 0.6 },
   findButton: { height: 58, borderRadius: 30, alignItems: 'center', justifyContent: 'center' },
   findButtonText: { color: '#fff', fontSize: 18, fontWeight: '800' },
-  jesusTakeTheWheel: { height: 52, borderRadius: 30, alignItems: 'center', justifyContent: 'center', marginTop: 12, borderWidth: 1.5, borderColor: '#FF8C42' },
-  jesusTakeTheWheelText: { color: '#FF8C42', fontSize: 14, fontWeight: '700' },
 });

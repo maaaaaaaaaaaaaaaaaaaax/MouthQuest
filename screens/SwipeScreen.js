@@ -16,7 +16,6 @@ export default function SwipeScreen({ route, navigation }) {
     const initial = route.params.restaurants;
     [0, 1, 2].forEach((i) => {
       if (initial[i]?.photo) {
-        console.log('[Prefetch] Initial — index', i);
         Image.prefetch(initial[i].photo);
       }
     });
@@ -32,6 +31,7 @@ export default function SwipeScreen({ route, navigation }) {
   const cardIndexRef = useRef(0);
   const nextPageTokenRef = useRef(initialPageToken);
   const retryCountRef = useRef(0);
+  const swiperRef = useRef(null);
 
   // Reset deck when returning from FilterScreen with fresh results
   useEffect(() => {
@@ -50,7 +50,6 @@ export default function SwipeScreen({ route, navigation }) {
     setFinished(false);
     setLoadingMore(false);
   }, [route.params.resetKey]);
-  const swiperRef = useRef(null);
 
   const openInMaps = useCallback((restaurant) => {
     const q = encodeURIComponent(restaurant.name + ' ' + restaurant.address);
@@ -69,10 +68,7 @@ export default function SwipeScreen({ route, navigation }) {
     cardIndexRef.current = index + 1;
     const next = restaurants[index + 2];
     if (next?.photo) {
-      console.log('[Prefetch] Swiped index', index, '— prefetching index', index + 2);
       Image.prefetch(next.photo);
-    } else {
-      console.log('[Prefetch] Swiped index', index, '— no card at index', index + 2, 'to prefetch');
     }
   }, [restaurants]);
 
@@ -103,7 +99,7 @@ export default function SwipeScreen({ route, navigation }) {
     } finally {
       setLoadingMore(false);
     }
-  }, [coords, query]);
+  }, [coords, query, filters]);
 
   if (empty) return (
     <LinearGradient colors={['#1a0505', '#0f0f0f']} style={styles.center}>
@@ -170,12 +166,16 @@ export default function SwipeScreen({ route, navigation }) {
           key={deckKey}
           ref={swiperRef}
           cards={restaurants}
-          renderCard={(r, i) => { console.log('[RenderCard] index', i, r ? r.name : 'null'); return r ? <RestaurantCard restaurant={r} /> : null; }}
+          renderCard={(r, i) => r ? <RestaurantCard key={r.placeId} restaurant={r} /> : null}
           onSwipedRight={handleSwipedRight}
           onSwipedLeft={handleSwipedLeft}
           onSwiped={handleSwiped}
           onSwipedAll={handleAllSwiped}
           backgroundColor="transparent"
+          infinite={false}
+          swipeBackCard={false}
+          cardIndex={0}
+          swipeAnimationDuration={0}
           stackSize={2}
           stackSeparation={10}
           stackScale={4}

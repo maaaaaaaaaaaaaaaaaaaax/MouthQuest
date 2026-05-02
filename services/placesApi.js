@@ -21,6 +21,17 @@
 //     and avoid tourist traps. Implementable client-side using the existing reviewCount field on each restaurant
 //     object — no API changes needed. Add a slider or chip row to FilterScreen (e.g. 'Under 50', 'Under 200',
 //     'Under 500', 'Any'). Consider pairing with a minimum rating filter so low-review results are still quality.
+//   - Hidden Gems toggle: filter client-side for restaurants with user_ratings_total < 500 AND rating >= 4.0.
+//     Surfaces lesser-known quality spots without exposing a raw review count filter. Add as a toggle in
+//     FilterScreen alongside the existing price/distance/rating filters.
+//   - Guided mood-based search path: on the search screen, offer two entry points — 'I know what I want'
+//     (current filter flow) and 'Pick my vibe' (guided path). The guided path presents curated preset cards
+//     the user taps to select, each mapping to a specific combination of Places API parameters and
+//     client-side filters. Presets to define later but initial ideas include: 'Date night somewhere cute'
+//     (high rating, upscale price, prominence sort), 'Big group, big drinks' (bars, high capacity keywords),
+//     'Hidden gem' (under 500 reviews, rating 4.0+), 'Quick and cheap' ($ price, open now, distance 0.5mi).
+//     Each preset bypasses the filter screen entirely and goes straight to the swipe deck. Add as a new
+//     screen screens/MoodScreen.js inserted between SearchScreen and FilterScreen.
 //   - Wait time filter: explore Places API busyness data. Validate coverage before building UI
 //   - Food photo filtering: request multiple photos per restaurant, use food-classified image. Evaluate Google Cloud Vision API if needed
 //   - Filtering for menu/food items using Google Places photo category metadata

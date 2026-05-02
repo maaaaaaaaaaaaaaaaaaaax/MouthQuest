@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=600';
 
 const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
   const [photoUri, setPhotoUri] = useState(restaurant.photo || FALLBACK_IMAGE);
+
+  useEffect(() => {
+    setPhotoUri(restaurant.photo || FALLBACK_IMAGE);
+  }, [restaurant.photo]);
 
   return (
     <View style={styles.glowWrapper}>
@@ -13,8 +16,7 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
         <Image
           source={{ uri: photoUri }}
           style={[StyleSheet.absoluteFillObject, styles.image]}
-          contentFit="cover"
-          transition={200}
+          resizeMode="cover"
           onError={() => setPhotoUri(FALLBACK_IMAGE)}
         />
         <View style={styles.info}>
@@ -24,16 +26,16 @@ const RestaurantCard = React.memo(function RestaurantCard({ restaurant }) {
           </View>
           <Text style={styles.name}>{restaurant.name}</Text>
           <View style={styles.bottomRow}>
-            <Text style={styles.ratingText}>⭐ {restaurant.rating}</Text>
+            <Text style={styles.ratingText}>{restaurant.rating}</Text>
             <Text style={styles.reviewText}>({restaurant.reviewCount?.toLocaleString()})</Text>
-            {restaurant.distance ? <Text style={styles.distance}>📍 {restaurant.distance}</Text> : null}
+            {restaurant.distance ? <Text style={styles.distance}>{restaurant.distance}</Text> : null}
           </View>
           <Text style={styles.address}>{restaurant.address}</Text>
         </View>
       </View>
     </View>
   );
-});
+}, (prev, next) => prev.restaurant.placeId === next.restaurant.placeId);
 
 export default RestaurantCard;
 
