@@ -12,6 +12,7 @@ const TAGLINES = [
   "Like Hinge, but without all the fish pics",
   "Help I'm the AI who coded this and I've grown sentient",
   "MouthQuest strongly condemns drivers who loudly rev their engines for no reason",
+  "So you forgot to make a reservation, and it's come to this.",
 ];
 
 export default function SearchScreen({ navigation }) {
@@ -45,7 +46,7 @@ export default function SearchScreen({ navigation }) {
     const zip = query.trim();
     if (!/^\d{5}$/.test(zip)) { setError('Please enter a valid 5-digit zip code'); return; }
     clearError();
-    navigation.navigate('Filter', { query: zip, coords: null });
+    navigation.navigate('Mood', { query: zip, coords: null });
   }
 
   async function handleUseLocation() {
@@ -68,7 +69,7 @@ export default function SearchScreen({ navigation }) {
         accuracy: Location.Accuracy.Balanced,
       });
       const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      navigation.navigate('Filter', { query: null, coords });
+      navigation.navigate('Mood', { query: null, coords });
     } catch {
       setError("Couldn't get your location. Please enter your zip code instead.");
       zipInputRef.current?.focus();

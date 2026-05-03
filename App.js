@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StatusBar } from 'expo-status-bar';
 import SearchScreen from './screens/SearchScreen';
 import FilterScreen from './screens/FilterScreen';
+import MoodScreen from './screens/MoodScreen';
 import SwipeScreen from './screens/SwipeScreen';
 
 const Stack = createNativeStackNavigator();
@@ -20,8 +21,9 @@ export default function App() {
         }}
       >
         <Stack.Screen name="Search" component={SearchScreen} />
-        <Stack.Screen name="Filter" component={FilterScreen} />
+        <Stack.Screen name="Mood" component={MoodScreen} />
         <Stack.Screen name="Swipe" component={SwipeScreen} />
+        <Stack.Screen name="Filter" component={FilterScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

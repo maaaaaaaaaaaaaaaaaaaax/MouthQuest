@@ -24,14 +24,10 @@
 //   - Hidden Gems toggle: filter client-side for restaurants with user_ratings_total < 500 AND rating >= 4.0.
 //     Surfaces lesser-known quality spots without exposing a raw review count filter. Add as a toggle in
 //     FilterScreen alongside the existing price/distance/rating filters.
-//   - Guided mood-based search path: on the search screen, offer two entry points — 'I know what I want'
-//     (current filter flow) and 'Pick my vibe' (guided path). The guided path presents curated preset cards
-//     the user taps to select, each mapping to a specific combination of Places API parameters and
-//     client-side filters. Presets to define later but initial ideas include: 'Date night somewhere cute'
-//     (high rating, upscale price, prominence sort), 'Big group, big drinks' (bars, high capacity keywords),
-//     'Hidden gem' (under 500 reviews, rating 4.0+), 'Quick and cheap' ($ price, open now, distance 0.5mi).
-//     Each preset bypasses the filter screen entirely and goes straight to the swipe deck. Add as a new
-//     screen screens/MoodScreen.js inserted between SearchScreen and FilterScreen.
+//   - Guided mood-based search path ✅: MoodScreen is now the mandatory second step for all users.
+//     Search → Mood → Swipe; FilterScreen accessible only from the Filters pill inside SwipeScreen.
+//     Five vibes (Date night, Group hang, Hidden gem, Quick and cheap, I'm up for anything) each map
+//     to a filter preset. keyword and maxReviews filter support added to fetchNearbyRestaurants.
 //   - Wait time filter: explore Places API busyness data. Validate coverage before building UI
 //   - Food photo filtering: request multiple photos per restaurant, use food-classified image. Evaluate Google Cloud Vision API if needed
 //   - Filtering for menu/food items using Google Places photo category metadata
@@ -117,12 +113,15 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
     await new Promise((res) => setTimeout(res, 2000));
     url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?pagetoken=${pageToken}&key=${GOOGLE_PLACES_API_KEY}`;
   } else if (filters) {
-    const { cuisines = [], priceLevels = [], radiusMiles = 2, openNow = false } = filters;
+    const { cuisines = [], priceLevels = [], radiusMiles = 2, openNow = false, keyword = '' } = filters;
     const radiusMeters = Math.round(radiusMiles * 1609.34);
     url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.lat},${location.lng}&radius=${radiusMeters}&type=restaurant&key=${GOOGLE_PLACES_API_KEY}`;
-    if (cuisines.length > 0) url += `&keyword=${encodeURIComponent(cuisines.join(' '))}`;
+    // keyword field (mood presets) and cuisines (filter screen) both map to Places &keyword
+    const keywordTerms = [keyword, cuisines.join(' ')].filter(Boolean).join(' ').trim();
+    if (keywordTerms) url += `&keyword=${encodeURIComponent(keywordTerms)}`;
     if (priceLevels.length > 0) {
-      const levels = priceLevels.map((p) => PRICE_LEVEL_MAP[p]);
+      // priceLevels may be numeric (mood presets) or $ symbols (filter screen)
+      const levels = priceLevels.map((p) => typeof p === 'number' ? p : PRICE_LEVEL_MAP[p]);
       url += `&minprice=${Math.min(...levels)}&maxprice=${Math.max(...levels)}`;
     }
     if (openNow) url += `&opennow=true`;
@@ -166,18 +165,20 @@ export async function fetchNearbyRestaurants(cityOrZipOrCoords, pageToken = null
     };
   });
 
-  // Client-side filters: rating (Places API has no native rating filter)
+  // Client-side filters: rating, maxReviews (Places API has no native equivalents)
   // and distance (enforces exact radius, since API radius is approximate)
   let filtered = restaurants;
   if (filters && location) {
     // Client-side distance filter only applies when we have the original center.
     // pageToken results skip this — the original search already enforced the radius.
-    const { minRating = 0, radiusMiles = 2 } = filters;
+    const { minRating = 0, radiusMiles = 2, maxReviews = null } = filters;
     if (minRating > 0) filtered = filtered.filter((r) => (r.rating || 0) >= minRating);
+    if (maxReviews != null) filtered = filtered.filter((r) => (r.reviewCount || 0) <= maxReviews);
     filtered = filtered.filter((r) => r.distanceMiles <= radiusMiles);
   } else if (filters && !location) {
-    const { minRating = 0 } = filters;
+    const { minRating = 0, maxReviews = null } = filters;
     if (minRating > 0) filtered = filtered.filter((r) => (r.rating || 0) >= minRating);
+    if (maxReviews != null) filtered = filtered.filter((r) => (r.reviewCount || 0) <= maxReviews);
   }
 
   // Filter out restaurants the user has previously rejected at this location.
